@@ -1,0 +1,11 @@
+PyQt5>=5.15
+ultralytics
+torch
+torchvision
+torchaudio
+opencv-python
+pyyaml
+matplotlib
+albumentations>=1.4
+numpy
+pyinstaller
