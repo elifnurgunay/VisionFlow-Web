@@ -200,13 +200,78 @@ def autolabel():
 def augment():
     multiplier = int(request.form.get('multiplier', 5))
     
-    # Formdan gelen checkbox değerleri (seçiliyse 'on' gelir)
-    geo_enabled = request.form.get('geo_flip') == 'on'
-    photo_enabled = request.form.get('photo_bc') == 'on'
-    blur_enabled = request.form.get('blur_gauss') == 'on'
-    noise_enabled = request.form.get('noise_gauss') == 'on'
+    # --- FORM VERİLERİNİ ÇEKME VE cfg OLUŞTURMA ---
+    
+    # 1. Geometrik
+    geo_hf_enabled = request.form.get('geo_hf') == 'on'
+    geo_affine_enabled = request.form.get('geo_affine') == 'on'
+    
+    # 2. Fotometrik
+    photo_bc_enabled = request.form.get('photo_bc') == 'on'
+    photo_clahe_enabled = request.form.get('photo_clahe') == 'on'
+    
+    # 3. Bulanıklık ve Gürültü
+    blur_gb_enabled = request.form.get('blur_gauss') == 'on'
+    noise_gn_enabled = request.form.get('noise_gauss') == 'on'
 
-    # Dosya yolları
+    cfg = {
+        'input_dir': '', # Aşağıda doldurulacak
+        'output_dir': '', # Aşağıda doldurulacak
+        'multiplier': multiplier,
+        
+        'geometric': {
+            'enabled': geo_hf_enabled or geo_affine_enabled,
+            'horizontal_flip': {
+                'enabled': geo_hf_enabled, 
+                'p': float(request.form.get('hf_p', 0.5))
+            },
+            'affine': {
+                'enabled': geo_affine_enabled,
+                'rotate_min': int(request.form.get('af_rot_min', -15)),
+                'rotate_max': int(request.form.get('af_rot_max', 15)),
+                'scale_min': 0.9, 'scale_max': 1.1, # Karmaşayı önlemek için bazılarını sabitledik
+                'shear_min': -5, 'shear_max': 5,
+                'p': float(request.form.get('af_p', 0.5))
+            }
+        },
+        'photometric_linear': {
+            'enabled': photo_bc_enabled,
+            'brightness_contrast': {
+                'enabled': photo_bc_enabled,
+                'brightness_limit': float(request.form.get('bc_limit', 0.2)),
+                'contrast_limit': float(request.form.get('bc_limit', 0.2)),
+                'p': float(request.form.get('bc_p', 0.45))
+            }
+        },
+        'photometric_gamma': {
+            'enabled': photo_clahe_enabled,
+            'clahe': {
+                'enabled': photo_clahe_enabled,
+                'clip_limit': float(request.form.get('cl_limit', 4.0)),
+                'tile_grid_size': 8,
+                'p': float(request.form.get('cl_p', 0.3))
+            }
+        },
+        'blur': {
+            'enabled': blur_gb_enabled,
+            'gaussian_blur': {
+                'enabled': blur_gb_enabled,
+                'blur_limit': int(request.form.get('gb_limit', 7)),
+                'p': float(request.form.get('gb_p', 0.2))
+            }
+        },
+        'noise': {
+            'enabled': noise_gn_enabled,
+            'gauss_noise': {
+                'enabled': noise_gn_enabled,
+                'var_min': float(request.form.get('gn_var_min', 10.0)),
+                'var_max': float(request.form.get('gn_var_max', 50.0)),
+                'p': float(request.form.get('gn_p', 0.2))
+            }
+        }
+    }
+
+    # Dosya yolları işlemleri (Öncekiyle Aynı)
     frames_dir = os.path.join(app.config['OUTPUT_FOLDER'], 'frames')
     labels_dir = os.path.join(app.config['OUTPUT_FOLDER'], 'label_results', 'labels_txt')
     
@@ -219,10 +284,8 @@ def augment():
     os.makedirs(aug_output, exist_ok=True)
 
     if not os.path.exists(labels_dir) or len(os.listdir(labels_dir)) == 0:
-        return jsonify({"status": "error", "message": "Önce Auto Label sekmesinden etiketleme yapmalısınız. Etiket (.txt) dosyaları bulunamadı!"})
+        return jsonify({"status": "error", "message": "Önce Auto Label sekmesinden etiketleme yapmalısınız!"})
 
-    # KRİTİK ADIM: augmentor.py resim ve txt'yi aynı yerde ister. 
-    # Sadece etiketi olan resimleri ve etiketleri aug_input klasöründe birleştiriyoruz.
     import glob
     for f in glob.glob(os.path.join(aug_input, '*')):
         os.remove(f)
@@ -237,28 +300,8 @@ def augment():
                 shutil.copy(img_path, os.path.join(aug_input, base_name + '.jpg'))
                 shutil.copy(txt_path, os.path.join(aug_input, txt_name))
 
-    # core/augmentor.py'nin beklediği ayarlar sözlüğü
-    cfg = {
-        'input_dir': aug_input,
-        'output_dir': aug_output,
-        'multiplier': multiplier,
-        'geometric': {
-            'enabled': geo_enabled,
-            'horizontal_flip': {'enabled': geo_enabled, 'p': 0.5}
-        },
-        'photometric_linear': {
-            'enabled': photo_enabled,
-            'brightness_contrast': {'enabled': photo_enabled, 'p': 0.5}
-        },
-        'blur': {
-            'enabled': blur_enabled,
-            'gaussian_blur': {'enabled': blur_enabled, 'p': 0.5}
-        },
-        'noise': {
-            'enabled': noise_enabled,
-            'gauss_noise': {'enabled': noise_enabled, 'p': 0.5}
-        }
-    }
+    cfg['input_dir'] = aug_input
+    cfg['output_dir'] = aug_output
 
     def log_cb(msg):
         print(f"[Augmentor]: {msg}")
@@ -271,7 +314,6 @@ def augment():
     try:
         run_augmentation(cfg, log_cb, progress_cb, stop_flag)
         
-        # Sonuçları ZIP yap
         zip_base = os.path.join(app.config['OUTPUT_FOLDER'], 'dataset_augmented')
         shutil.make_archive(zip_base, 'zip', aug_output)
         
@@ -279,7 +321,7 @@ def augment():
     except Exception as e:
         import traceback
         print(traceback.format_exc())
-        return jsonify({"status": "error", "message": str(e)})    
+        return jsonify({"status": "error", "message": str(e)})
 
     
 if __name__ == '__main__':

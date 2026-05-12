@@ -173,57 +173,128 @@
             </div>
         </div>
 
-        <!-- 3. AUGMENTATION SEKMESİ -->
+        <!-- 3. AUGMENTATION SEKMESİ (GELİŞMİŞ) -->
         <div class="tab-pane fade" id="augment">
             <div class="row">
-                <!-- Sol Panel (Ayarlar) -->
-                <div class="col-lg-5 mb-4">
+                <!-- Sol Panel (Gelişmiş Ayarlar) -->
+                <div class="col-lg-7 mb-4">
                     <div class="card p-4 h-100">
-                        <h5 class="mb-4">Veri Setini Çoğalt (Augmentation)</h5>
-                        <p class="text-muted small">Bu işlem, etiketlenmiş karelerinize çeşitli filtreler uygulayarak veri setinizi çoklar.</p>
+                        <h5 class="mb-3">Veri Setini Çoğalt (Advanced Augmentation)</h5>
                         
                         <form id="augmentForm">
-                            <h6 class="mb-3 text-muted fw-bold">Çoğaltma Çarpanı</h6>
-                            <div class="mb-4">
-                                <label class="form-label d-flex justify-content-between">
-                                    <span>Her resimden kaç kopya üretilsin?</span>
+                            <div class="mb-4 bg-light p-3 border rounded">
+                                <label class="form-label d-flex justify-content-between mb-0">
+                                    <span class="fw-bold">Çoğaltma Çarpanı (Kopya Sayısı)</span>
                                     <span id="multValue" class="text-primary fw-bold">5</span>
                                 </label>
-                                <input type="range" class="form-range" name="multiplier" min="1" max="10" step="1" value="5" oninput="document.getElementById('multValue').innerText = this.value">
+                                <input type="range" class="form-range mt-2" name="multiplier" min="1" max="20" step="1" value="5" oninput="document.getElementById('multValue').innerText = this.value">
                             </div>
 
-                            <h6 class="mb-3 text-muted fw-bold">Uygulanacak Filtreler</h6>
-                            <div class="mb-4">
-                                <div class="form-check form-switch mb-2">
-                                    <input class="form-check-input" type="checkbox" name="geo_flip" id="geo_flip" checked>
-                                    <label class="form-check-label" for="geo_flip">Yatay Çevirme (Horizontal Flip)</label>
+                            <h6 class="mb-3 text-muted fw-bold">Filtre Parametreleri</h6>
+                            
+                            <!-- Açılır Menüler (Accordion) -->
+                            <div class="accordion mb-4" id="augAccordion">
+                                
+                                <!-- 1. Geometrik -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#colGeo">📐 Geometrik Dönüşümler</button></h2>
+                                    <div id="colGeo" class="accordion-collapse collapse show" data-bs-parent="#augAccordion">
+                                        <div class="accordion-body">
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" name="geo_hf" id="geo_hf" checked>
+                                                <label class="form-check-label fw-bold" for="geo_hf">Horizontal Flip (Yatay Çevirme)</label>
+                                                <div class="input-group input-group-sm mt-1 w-50">
+                                                    <span class="input-group-text">Olasılık (p):</span>
+                                                    <input type="number" name="hf_p" class="form-control" value="0.5" step="0.1">
+                                                </div>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" name="geo_affine" id="geo_affine" checked>
+                                                <label class="form-check-label fw-bold" for="geo_affine">Affine (Döndürme ve Bükme)</label>
+                                                <div class="input-group input-group-sm mt-1">
+                                                    <span class="input-group-text">Rotasyon:</span>
+                                                    <input type="number" name="af_rot_min" class="form-control" value="-15">
+                                                    <input type="number" name="af_rot_max" class="form-control" value="15">
+                                                    <span class="input-group-text">p:</span>
+                                                    <input type="number" name="af_p" class="form-control" value="0.5" step="0.1">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="form-check form-switch mb-2">
-                                    <input class="form-check-input" type="checkbox" name="photo_bc" id="photo_bc" checked>
-                                    <label class="form-check-label" for="photo_bc">Parlaklık ve Kontrast</label>
+
+                                <!-- 2. Fotometrik -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#colPhoto">🎨 Fotometrik (Renk, Işık, Gamma)</button></h2>
+                                    <div id="colPhoto" class="accordion-collapse collapse" data-bs-parent="#augAccordion">
+                                        <div class="accordion-body">
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" name="photo_bc" id="photo_bc" checked>
+                                                <label class="form-check-label fw-bold" for="photo_bc">Brightness & Contrast</label>
+                                                <div class="input-group input-group-sm mt-1">
+                                                    <span class="input-group-text">Limit:</span>
+                                                    <input type="number" name="bc_limit" class="form-control" value="0.2" step="0.1">
+                                                    <span class="input-group-text">p:</span>
+                                                    <input type="number" name="bc_p" class="form-control" value="0.45" step="0.05">
+                                                </div>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" name="photo_clahe" id="photo_clahe">
+                                                <label class="form-check-label fw-bold" for="photo_clahe">CLAHE (Lokal Kontrast)</label>
+                                                <div class="input-group input-group-sm mt-1 w-75">
+                                                    <span class="input-group-text">Clip Limit:</span>
+                                                    <input type="number" name="cl_limit" class="form-control" value="4.0" step="0.5">
+                                                    <span class="input-group-text">p:</span>
+                                                    <input type="number" name="cl_p" class="form-control" value="0.3" step="0.1">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="form-check form-switch mb-2">
-                                    <input class="form-check-input" type="checkbox" name="blur_gauss" id="blur_gauss">
-                                    <label class="form-check-label" for="blur_gauss">Bulanıklaştırma (Gaussian Blur)</label>
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="noise_gauss" id="noise_gauss">
-                                    <label class="form-check-label" for="noise_gauss">Kamera Gürültüsü (Gauss Noise)</label>
+
+                                <!-- 3. Bulanıklık ve Gürültü -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#colBlur">🌫️ Bulanıklık ve Sensör Gürültüsü</button></h2>
+                                    <div id="colBlur" class="accordion-collapse collapse" data-bs-parent="#augAccordion">
+                                        <div class="accordion-body">
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" name="blur_gauss" id="blur_gauss" checked>
+                                                <label class="form-check-label fw-bold" for="blur_gauss">Gaussian Blur</label>
+                                                <div class="input-group input-group-sm mt-1 w-75">
+                                                    <span class="input-group-text">Limit:</span>
+                                                    <input type="number" name="gb_limit" class="form-control" value="7" step="2">
+                                                    <span class="input-group-text">p:</span>
+                                                    <input type="number" name="gb_p" class="form-control" value="0.2" step="0.1">
+                                                </div>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" name="noise_gauss" id="noise_gauss" checked>
+                                                <label class="form-check-label fw-bold" for="noise_gauss">Gauss Noise (Sensör Gürültüsü)</label>
+                                                <div class="input-group input-group-sm mt-1">
+                                                    <span class="input-group-text">Varyans:</span>
+                                                    <input type="number" name="gn_var_min" class="form-control" value="10.0">
+                                                    <input type="number" name="gn_var_max" class="form-control" value="50.0">
+                                                    <span class="input-group-text">p:</span>
+                                                    <input type="number" name="gn_p" class="form-control" value="0.2" step="0.1">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn btn-warning w-100 mt-auto fw-bold text-dark">🚀 Veri Setini Çoğalt ve İndir</button>
+                            <button type="submit" class="btn btn-warning w-100 fw-bold text-dark fs-5 py-2">🚀 Gelişmiş Çoğaltmayı Başlat</button>
                         </form>
                     </div>
                 </div>
 
                 <!-- Sağ Panel (İşlem Logları) -->
-                <div class="col-lg-7 mb-4">
+                <div class="col-lg-5 mb-4">
                     <div class="card p-4 h-100 bg-dark text-light" style="border-radius: 12px;">
                         <h6 class="mb-3 text-warning fw-bold">Terminal Logları</h6>
-                        <div id="augmentLogs" class="font-monospace small" style="height: 300px; overflow-y: auto; color: #ebcb8b;">
-                            > Sistem hazır. <br>
-                            > Lütfen çoğaltma ayarlarını seçip başlatın.<br>
+                        <div id="augmentLogs" class="font-monospace small" style="height: 450px; overflow-y: auto; color: #ebcb8b;">
+                            > Sistem hazır.<br>
+                            > Lütfen gelişmiş parametreleri ayarlayıp başlatın.<br>
                         </div>
                     </div>
                 </div>
