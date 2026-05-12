@@ -5,6 +5,7 @@ import base64
 import cv2
 import threading
 from flask import Flask, render_template, request, send_file, jsonify
+from core.augmentor import run_augmentation
 
 # Orijinal core fonksiyonlarını içe aktarıyoruz
 from core.extractor import run_extraction, get_video_info, get_preview_frames
@@ -103,10 +104,183 @@ def extract():
         "download_url": "/download/dataset_frames.zip"
     })
 
-@app.route('/download/<filename>')
-def download(filename):
-    file_path = os.path.join(app.config['OUTPUT_FOLDER'], filename)
-    return send_file(file_path, as_attachment=True)
+# labeler'dan doğru fonksiyonu alıyoruz
+from core.labeler import run_pipeline 
 
+@app.route('/autolabel', methods=['POST'])
+def autolabel():
+    # Model yolu ve Cihaz tespiti
+    model_path = os.path.join(os.getcwd(), 'model', 'best.pt')
+    if not os.path.exists(model_path):
+        return jsonify({"status": "error", "message": "Model bulunamadı! Lütfen best.pt dosyasını 'model' klasörüne ekleyin."})
+
+    import torch
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    # Arayüzden gelen değerleri alıyoruz
+    conf = float(request.form.get('conf_thresh', 0.5))
+    iou = float(request.form.get('iou_thresh', 0.45))
+    img_size = int(request.form.get('img_size', 640))
+    
+    # 1. Aşama (Extractor'dan) elde edilen resimler nerede?
+    input_dir = os.path.join(app.config['OUTPUT_FOLDER'], 'frames')
+    if not os.path.exists(input_dir) or len(os.listdir(input_dir)) == 0:
+         return jsonify({"status": "error", "message": "Önce 'Frame Extract' sekmesinden video ayıklamanız gerekiyor (veya frames klasörü boş)."})
+
+    # Labeler'ın çıktı vereceği ana klasör
+    base_out = os.path.join(app.config['OUTPUT_FOLDER'], 'label_results')
+    
+    # Senin labeler.py içindeki run_pipeline fonksiyonunun BİREBİR beklediği dev sözlük (cfg)
+    cfg = {
+        'model': {
+            'path': model_path,
+            'img_size': img_size,
+            'conf_threshold': conf,
+            'iou_threshold': iou
+        },
+        'device': device,
+        'input': {
+            'images_dir': input_dir,
+            'extensions': ['.jpg', '.jpeg', '.png']
+        },
+        'output': {
+            # Tüm çıktıları zipleyeceğimiz için aynı ana klasörün içine koyuyoruz
+            'labels_txt_dir': os.path.join(base_out, 'labels_txt'),
+            'labels_json_dir': os.path.join(base_out, 'labels_json'),
+            'annotated_dir': os.path.join(base_out, 'images_annotated'),
+            'report_dir': os.path.join(base_out, 'reports')
+        },
+        'options': {
+            'warmup_images': 1,
+            'save_annotated': True,  # Kutulu resimleri kaydetsin
+            'skip_empty': False,     # Boş olanları atlasın mı?
+            'save_txt': True,        # TXT YOLO formatı
+            'save_json': False       # JSON formata şimdilik gerek yok
+        },
+        # Eğer YOLO modelin içinde kendi sınıf isimleri yoksa varsayılanlar
+        'classes': ["nesne1", "nesne2", "nesne3"], 
+        'class_colors': {
+             "nesne1": [255, 0, 0],
+             "nesne2": [0, 255, 0],
+             "nesne3": [0, 0, 255]
+        }
+    }
+    
+    def log_cb(msg):
+        print(f"[YOLO]: {msg}")
+        
+    def progress_cb(current, total):
+        pass 
+        
+    stop_flag = threading.Event()
+    
+    try:
+        # Senin harika fonksiyonunu çağırıyoruz!
+        stats = run_pipeline(cfg, log_cb, progress_cb, stop_flag)
+        
+        if stats is None:
+             return jsonify({"status": "error", "message": "Resimler işlenemedi."})
+             
+        # Tüm sonuçları (TXT'ler, kutulu resimler ve senin HTML raporun) tek bir ZIP yap
+        zip_base = os.path.join(app.config['OUTPUT_FOLDER'], 'dataset_labeled_results')
+        shutil.make_archive(zip_base, 'zip', base_out)
+        
+        total_işlenen = stats.get('total_images', 0)
+        
+        return jsonify({
+            "status": "success", 
+            "count": total_işlenen, 
+            "download_url": "/download/dataset_labeled_results.zip"
+        })
+    except Exception as e:
+         import traceback
+         print(traceback.format_exc()) # Hatayı terminalde detaylı görmek için
+         return jsonify({"status": "error", "message": str(e)})
+@app.route('/augment', methods=['POST'])
+def augment():
+    multiplier = int(request.form.get('multiplier', 5))
+    
+    # Formdan gelen checkbox değerleri (seçiliyse 'on' gelir)
+    geo_enabled = request.form.get('geo_flip') == 'on'
+    photo_enabled = request.form.get('photo_bc') == 'on'
+    blur_enabled = request.form.get('blur_gauss') == 'on'
+    noise_enabled = request.form.get('noise_gauss') == 'on'
+
+    # Dosya yolları
+    frames_dir = os.path.join(app.config['OUTPUT_FOLDER'], 'frames')
+    labels_dir = os.path.join(app.config['OUTPUT_FOLDER'], 'label_results', 'labels_txt')
+    
+    aug_input = os.path.join(app.config['OUTPUT_FOLDER'], 'aug_input')
+    aug_output = os.path.join(app.config['OUTPUT_FOLDER'], 'aug_output')
+    
+    os.makedirs(aug_input, exist_ok=True)
+    if os.path.exists(aug_output):
+        shutil.rmtree(aug_output)
+    os.makedirs(aug_output, exist_ok=True)
+
+    if not os.path.exists(labels_dir) or len(os.listdir(labels_dir)) == 0:
+        return jsonify({"status": "error", "message": "Önce Auto Label sekmesinden etiketleme yapmalısınız. Etiket (.txt) dosyaları bulunamadı!"})
+
+    # KRİTİK ADIM: augmentor.py resim ve txt'yi aynı yerde ister. 
+    # Sadece etiketi olan resimleri ve etiketleri aug_input klasöründe birleştiriyoruz.
+    import glob
+    for f in glob.glob(os.path.join(aug_input, '*')):
+        os.remove(f)
+
+    for txt_name in os.listdir(labels_dir):
+        if txt_name.endswith('.txt'):
+            base_name = txt_name[:-4]
+            img_path = os.path.join(frames_dir, base_name + '.jpg')
+            txt_path = os.path.join(labels_dir, txt_name)
+            
+            if os.path.exists(img_path):
+                shutil.copy(img_path, os.path.join(aug_input, base_name + '.jpg'))
+                shutil.copy(txt_path, os.path.join(aug_input, txt_name))
+
+    # core/augmentor.py'nin beklediği ayarlar sözlüğü
+    cfg = {
+        'input_dir': aug_input,
+        'output_dir': aug_output,
+        'multiplier': multiplier,
+        'geometric': {
+            'enabled': geo_enabled,
+            'horizontal_flip': {'enabled': geo_enabled, 'p': 0.5}
+        },
+        'photometric_linear': {
+            'enabled': photo_enabled,
+            'brightness_contrast': {'enabled': photo_enabled, 'p': 0.5}
+        },
+        'blur': {
+            'enabled': blur_enabled,
+            'gaussian_blur': {'enabled': blur_enabled, 'p': 0.5}
+        },
+        'noise': {
+            'enabled': noise_enabled,
+            'gauss_noise': {'enabled': noise_enabled, 'p': 0.5}
+        }
+    }
+
+    def log_cb(msg):
+        print(f"[Augmentor]: {msg}")
+        
+    def progress_cb(current, total):
+        pass 
+        
+    stop_flag = threading.Event()
+
+    try:
+        run_augmentation(cfg, log_cb, progress_cb, stop_flag)
+        
+        # Sonuçları ZIP yap
+        zip_base = os.path.join(app.config['OUTPUT_FOLDER'], 'dataset_augmented')
+        shutil.make_archive(zip_base, 'zip', aug_output)
+        
+        return jsonify({"status": "success", "download_url": "/download/dataset_augmented.zip"})
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"status": "error", "message": str(e)})    
+
+    
 if __name__ == '__main__':
     app.run(debug=True)

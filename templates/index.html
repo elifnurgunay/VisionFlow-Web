@@ -118,23 +118,125 @@
             </div>
         </div>
 
-        <!-- 2. AUTO LABEL SEKMESİ (Hazırlık) -->
-        <div class="tab-pane fade text-center py-5 card" id="label">
-            <h4 class="text-muted">Auto Label (Otomatik Etiketleme)</h4>
-            <p class="text-muted">YOLO modeli ve etiketleme işlemleri buraya entegre edilecek.</p>
+        <!-- 2. AUTO LABEL SEKMESİ -->
+        <div class="tab-pane fade" id="label">
+            <div class="row">
+                <!-- Sol Panel (Model Ayarları) -->
+                <div class="col-lg-5 mb-4">
+                    <div class="card p-4 h-100">
+                        <h5 class="mb-4">YOLO ile Otomatik Etiketle</h5>
+                        <p class="text-muted small">Bu işlem, Frame Extract sekmesinde çıkardığınız kareleri (veya yüklediğiniz yeni bir klasörü) kullanarak otomatik .txt etiketleri oluşturur.</p>
+                        
+                        <form id="labelForm">
+                            <h6 class="mb-3 text-muted fw-bold">Model Parametreleri</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label d-flex justify-content-between">
+                                    <span>Güven Eşiği (Confidence)</span>
+                                    <span id="confValue" class="text-primary fw-bold">0.50</span>
+                                </label>
+                                <input type="range" class="form-range" name="conf_thresh" min="0.1" max="1.0" step="0.05" value="0.50" oninput="document.getElementById('confValue').innerText = this.value">
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label d-flex justify-content-between">
+                                    <span>Kesişim Eşiği (IoU)</span>
+                                    <span id="iouValue" class="text-primary fw-bold">0.45</span>
+                                </label>
+                                <input type="range" class="form-range" name="iou_thresh" min="0.1" max="1.0" step="0.05" value="0.45" oninput="document.getElementById('iouValue').innerText = this.value">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label">Görüntü Boyutu (Img Size)</label>
+                                <select class="form-select" name="img_size">
+                                    <option value="320">320 px (Hızlı)</option>
+                                    <option value="640" selected>640 px (Dengeli)</option>
+                                    <option value="1280">1280 px (Detaylı)</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-success w-100 mt-auto">🎯 Etiketlemeyi Başlat ve İndir</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Sağ Panel (İşlem Logları ve Durum) -->
+                <div class="col-lg-7 mb-4">
+                    <div class="card p-4 h-100 bg-dark text-light" style="border-radius: 12px;">
+                        <h6 class="mb-3 text-success fw-bold">Terminal Logları</h6>
+                        <div id="labelLogs" class="font-monospace small" style="height: 300px; overflow-y: auto; color: #a3be8c;">
+                            > Sistem hazır. Model bekleniyor...<br>
+                            > Lütfen sol taraftan parametreleri ayarlayıp başlatın.<br>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- 3. AUGMENTATION SEKMESİ (Hazırlık) -->
-        <div class="tab-pane fade text-center py-5 card" id="augment">
-            <h4 class="text-muted">Augmentation (Veri Artırma)</h4>
-            <p class="text-muted">Albumentations filtreleri buradan yönetilecek.</p>
+        <!-- 3. AUGMENTATION SEKMESİ -->
+        <div class="tab-pane fade" id="augment">
+            <div class="row">
+                <!-- Sol Panel (Ayarlar) -->
+                <div class="col-lg-5 mb-4">
+                    <div class="card p-4 h-100">
+                        <h5 class="mb-4">Veri Setini Çoğalt (Augmentation)</h5>
+                        <p class="text-muted small">Bu işlem, etiketlenmiş karelerinize çeşitli filtreler uygulayarak veri setinizi çoklar.</p>
+                        
+                        <form id="augmentForm">
+                            <h6 class="mb-3 text-muted fw-bold">Çoğaltma Çarpanı</h6>
+                            <div class="mb-4">
+                                <label class="form-label d-flex justify-content-between">
+                                    <span>Her resimden kaç kopya üretilsin?</span>
+                                    <span id="multValue" class="text-primary fw-bold">5</span>
+                                </label>
+                                <input type="range" class="form-range" name="multiplier" min="1" max="10" step="1" value="5" oninput="document.getElementById('multValue').innerText = this.value">
+                            </div>
+
+                            <h6 class="mb-3 text-muted fw-bold">Uygulanacak Filtreler</h6>
+                            <div class="mb-4">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" name="geo_flip" id="geo_flip" checked>
+                                    <label class="form-check-label" for="geo_flip">Yatay Çevirme (Horizontal Flip)</label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" name="photo_bc" id="photo_bc" checked>
+                                    <label class="form-check-label" for="photo_bc">Parlaklık ve Kontrast</label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" name="blur_gauss" id="blur_gauss">
+                                    <label class="form-check-label" for="blur_gauss">Bulanıklaştırma (Gaussian Blur)</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="noise_gauss" id="noise_gauss">
+                                    <label class="form-check-label" for="noise_gauss">Kamera Gürültüsü (Gauss Noise)</label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-warning w-100 mt-auto fw-bold text-dark">🚀 Veri Setini Çoğalt ve İndir</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Sağ Panel (İşlem Logları) -->
+                <div class="col-lg-7 mb-4">
+                    <div class="card p-4 h-100 bg-dark text-light" style="border-radius: 12px;">
+                        <h6 class="mb-3 text-warning fw-bold">Terminal Logları</h6>
+                        <div id="augmentLogs" class="font-monospace small" style="height: 300px; overflow-y: auto; color: #ebcb8b;">
+                            > Sistem hazır. <br>
+                            > Lütfen çoğaltma ayarlarını seçip başlatın.<br>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Mod seçimine göre girdi alanlarını göster/gizle
+    // ==========================================
+    // 1. SEKME: FRAME EXTRACT İŞLEMLERİ
+    // ==========================================
     const modeRadios = document.querySelectorAll('input[name="extractionMode"]');
     const modeInputs = document.querySelectorAll('.mode-inputs');
     modeRadios.forEach(radio => {
@@ -145,7 +247,6 @@
         });
     });
 
-    // Dosya seçildiğinde video bilgilerini ve önizlemeyi al
     const videoInput = document.getElementById('videoInput');
     const videoInfoDiv = document.getElementById('videoInfo');
     const previewGridDiv = document.getElementById('previewGrid');
@@ -167,7 +268,6 @@
             if(data.status === "success") {
                 uploadText.innerHTML = "✅ Seçilen Video: <b>" + videoFile.name + "</b>";
                 
-                // Video Bilgisi'ni doldur (Tablo stili sağa ve sola yaslı)
                 const info = data.info;
                 videoInfoDiv.innerHTML = `
                     <p><span>Süre:</span> <b class="text-dark">${info.duration.toFixed(2)} sn</b></p>
@@ -176,7 +276,6 @@
                     <p><span>Çözünürlük:</span> <b class="text-dark">${info.width} x ${info.height}</b></p>
                 `;
 
-                // Önizleme Grid'ini doldur
                 previewGridDiv.innerHTML = "";
                 data.previews.forEach(frame64 => {
                     const col = document.createElement('div');
@@ -192,7 +291,6 @@
         }
     });
 
-    // İşlemi Başlatma
     document.getElementById('extractForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const videoFile = videoInput.files[0];
@@ -223,6 +321,77 @@
             alert("İşlem sırasında hata!");
             btn.innerHTML = originalText;
             btn.disabled = false;
+        }
+    });
+
+    // ==========================================
+    // 2. SEKME: AUTO LABEL İŞLEMLERİ (YENİ EKLENEN)
+    // ==========================================
+    document.getElementById('labelForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const btn = document.querySelector('#labelForm button[type="submit"]');
+        const logs = document.getElementById('labelLogs');
+        const originalText = btn.innerHTML;
+        
+        btn.innerHTML = "⏳ Yapay Zeka Çalışıyor... (Terminali izleyin)";
+        btn.disabled = true;
+        logs.innerHTML += "> Etiketleme işlemi başlatıldı, model yükleniyor...<br>";
+        logs.scrollTop = logs.scrollHeight;
+
+        try {
+            const response = await fetch('/autolabel', { method: 'POST', body: formData });
+            const data = await response.json();
+
+            if(data.status === "success") {
+                btn.innerHTML = `✅ ${data.count} Dosya Etiketlendi! ZIP İndiriliyor...`;
+                logs.innerHTML += `> İşlem Başarılı! ${data.count} dosya işlendi.<br>`;
+                window.location.href = data.download_url;
+                setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 4000);
+            } else {
+                alert("Hata: " + data.message);
+                logs.innerHTML += `> HATA: ${data.message}<br>`;
+                btn.innerHTML = originalText; btn.disabled = false;
+            }
+        } catch (error) {
+            alert("Sunucu ile iletişim kurulamadı!");
+            btn.innerHTML = originalText; btn.disabled = false;
+        }
+    });
+    // ==========================================
+    // 3. SEKME: AUGMENTATION İŞLEMLERİ
+    // ==========================================
+    document.getElementById('augmentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const btn = document.querySelector('#augmentForm button[type="submit"]');
+        const logs = document.getElementById('augmentLogs');
+        const originalText = btn.innerHTML;
+        
+        btn.innerHTML = "⏳ Filtreler Uygulanıyor... (Terminali izleyin)";
+        btn.disabled = true;
+        logs.innerHTML += "> Veri çoğaltma işlemi başlatıldı, albumentations yükleniyor...<br>";
+        logs.scrollTop = logs.scrollHeight;
+
+        try {
+            const response = await fetch('/augment', { method: 'POST', body: formData });
+            const data = await response.json();
+
+            if(data.status === "success") {
+                btn.innerHTML = `✅ Çoğaltma Başarılı! ZIP İndiriliyor...`;
+                logs.innerHTML += `> İşlem Başarılı! Genişletilmiş veri seti hazır.<br>`;
+                window.location.href = data.download_url;
+                setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 4000);
+            } else {
+                alert("Hata: " + data.message);
+                logs.innerHTML += `> HATA: ${data.message}<br>`;
+                btn.innerHTML = originalText; btn.disabled = false;
+            }
+        } catch (error) {
+            alert("Sunucu ile iletişim kurulamadı!");
+            btn.innerHTML = originalText; btn.disabled = false;
         }
     });
 </script>
