@@ -35,24 +35,22 @@ dist/
 *.spec
 
 # =========================
-# Dataset / Outputs
+# Dataset / Outputs / Uploads
 # =========================
 datasets/
 data/
 output/
 outputs/
+uploads/
 results/
 runs/
 
 # YOLO / training outputs
-weights/
-*.pt
-*.pth
-*.onnx
-
-# Annotation outputs
-*.txt
-*.json
+# (Eğer best.pt'nin Git'e gitmesini İSTİYORSAN bunları yoruma almalısın)
+# weights/
+# *.pt
+# *.pth
+# *.onnx
 
 # =========================
 # Logs & Reports
@@ -60,8 +58,7 @@ weights/
 *.log
 report/
 reports/
-*.html
-*.png
+# DİKKAT: *.html ve *.png kurallarını kaldırdık! Artık templates içindeki HTML'ler gidecek.
 
 # =========================
 # Config (optional safety)

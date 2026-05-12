@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionFlow Web Studio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Inter', sans-serif; }
+        .navbar { background-color: #ffffff; border-bottom: 1px solid #e5e7eb; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .nav-pills .nav-link { color: #4b5563; font-weight: 500; border-radius: 8px; margin: 0 5px; }
+        .nav-pills .nav-link.active { background-color: #3b82f6; color: white; }
+        .btn-primary { background-color: #3b82f6; border: none; padding: 10px 20px; border-radius: 8px; }
+        .upload-area { border: 2px dashed #d1d5db; border-radius: 12px; padding: 40px; text-align: center; background: #fff; cursor: pointer; transition: 0.3s; }
+        .upload-area:hover { border-color: #3b82f6; background-color: #f0fdf4; }
+        .preview-grid img { border-radius: 8px; width: 100%; height: 110px; object-fit: cover; border: 1px solid #e5e7eb; }
+        .video-info-box p { margin-bottom: 0.5rem; display: flex; justify-content: space-between; border-bottom: 1px dashed #e5e7eb; padding-bottom: 4px; }
+        .video-info-box p:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg py-3">
+    <div class="container-fluid px-5">
+        <a class="navbar-brand fw-bold text-primary" href="#">🚀 VisionFlow Web</a>
+        <div class="ms-auto">
+            <span class="badge bg-success-subtle text-success p-2">Sistem Hazır</span>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-5 mt-4">
+    <!-- ANA SEKMELER (Eski arayüzdeki gibi üstte) -->
+    <ul class="nav nav-pills mb-4 justify-content-center" id="pills-tab" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#extract">⬡ Frame Extract</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#label">⬡ Auto Label</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#augment">⬡ Augmentation</button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- 1. FRAME EXTRACT SEKMESİ -->
+        <div class="tab-pane fade show active" id="extract">
+            <div class="row">
+                <!-- Sol Panel (Girdiler) -->
+                <div class="col-lg-5 mb-4">
+                    <div class="card p-4 h-100">
+                        <h5 class="mb-4">Video'dan Kare Ayıkla</h5>
+                        <form id="extractForm">
+                            <div class="upload-area mb-4" onclick="document.getElementById('videoInput').click()">
+                                <p class="text-muted m-0" id="uploadText">Videoyu buraya sürükleyin veya tıklayarak seçin (.mp4, .avi)</p>
+                                <input type="file" id="videoInput" accept="video/*" hidden>
+                            </div>
+
+                            <h6 class="mb-3 text-muted fw-bold">Extraction Modu</h6>
+                            <div class="mb-4 d-flex flex-wrap gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="extractionMode" id="modeNth" value="nth" checked>
+                                    <label class="form-check-label" for="modeNth">Her N. frame</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="extractionMode" id="modeFps" value="fps">
+                                    <label class="form-check-label" for="modeFps">Saniyede X frame</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="extractionMode" id="modeMotion" value="motion">
+                                    <label class="form-check-label" for="modeMotion">Hareket eşiği</label>
+                                </div>
+                            </div>
+
+                            <!-- Girdi Alanları -->
+                            <div id="inputNth" class="mb-4 row align-items-center mode-inputs">
+                                <label class="col-sm-6 col-form-label">Örnekleme Aralığı (Frame)</label>
+                                <div class="col-sm-6">
+                                    <input type="number" name="interval" class="form-control" value="10">
+                                </div>
+                            </div>
+                            <div id="inputFps" class="mb-4 row align-items-center mode-inputs d-none">
+                                <label class="col-sm-6 col-form-label">Hedef FPS</label>
+                                <div class="col-sm-6">
+                                    <input type="number" name="target_fps" class="form-control" value="2.0" step="0.1">
+                                </div>
+                            </div>
+                            <div id="inputMotion" class="mb-4 row align-items-center mode-inputs d-none">
+                                <label class="col-sm-6 col-form-label">Eşik Değeri (Diff Skor)</label>
+                                <div class="col-sm-6">
+                                    <input type="number" name="motion_thresh" class="form-control" value="15.0" step="0.1">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 mt-auto">▶ İşlemi Başlat ve ZIP Hazırla</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Sağ Panel (Video Bilgisi ve Önizleme) -->
+                <div class="col-lg-7 mb-4">
+                    <div class="card p-4 mb-4">
+                        <h6 class="mb-3 text-muted fw-bold">Video Bilgisi</h6>
+                        <div id="videoInfo" class="text-muted video-info-box">
+                            <p class="text-center d-block w-100">Lütfen bir video seçin...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card p-4">
+                        <h6 class="mb-3 text-muted fw-bold">Önizleme (6 rastgele frame)</h6>
+                        <div id="previewGrid" class="row row-cols-3 g-3 preview-grid">
+                            <div class="col text-center text-muted w-100">Önizleme bekleniyor...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. AUTO LABEL SEKMESİ (Hazırlık) -->
+        <div class="tab-pane fade text-center py-5 card" id="label">
+            <h4 class="text-muted">Auto Label (Otomatik Etiketleme)</h4>
+            <p class="text-muted">YOLO modeli ve etiketleme işlemleri buraya entegre edilecek.</p>
+        </div>
+
+        <!-- 3. AUGMENTATION SEKMESİ (Hazırlık) -->
+        <div class="tab-pane fade text-center py-5 card" id="augment">
+            <h4 class="text-muted">Augmentation (Veri Artırma)</h4>
+            <p class="text-muted">Albumentations filtreleri buradan yönetilecek.</p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Mod seçimine göre girdi alanlarını göster/gizle
+    const modeRadios = document.querySelectorAll('input[name="extractionMode"]');
+    const modeInputs = document.querySelectorAll('.mode-inputs');
+    modeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            modeInputs.forEach(input => input.classList.add('d-none'));
+            const targetId = "input" + e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1);
+            document.getElementById(targetId).classList.remove('d-none');
+        });
+    });
+
+    // Dosya seçildiğinde video bilgilerini ve önizlemeyi al
+    const videoInput = document.getElementById('videoInput');
+    const videoInfoDiv = document.getElementById('videoInfo');
+    const previewGridDiv = document.getElementById('previewGrid');
+    const uploadText = document.getElementById('uploadText');
+
+    videoInput.addEventListener('change', async (e) => {
+        const videoFile = e.target.files[0];
+        if(!videoFile) return;
+
+        uploadText.innerHTML = "⏳ Video Bilgileri Yükleniyor: <b>" + videoFile.name + "</b>";
+
+        const formData = new FormData();
+        formData.append('video', videoFile);
+
+        try {
+            const response = await fetch('/get_video_data', { method: 'POST', body: formData });
+            const data = await response.json();
+
+            if(data.status === "success") {
+                uploadText.innerHTML = "✅ Seçilen Video: <b>" + videoFile.name + "</b>";
+                
+                // Video Bilgisi'ni doldur (Tablo stili sağa ve sola yaslı)
+                const info = data.info;
+                videoInfoDiv.innerHTML = `
+                    <p><span>Süre:</span> <b class="text-dark">${info.duration.toFixed(2)} sn</b></p>
+                    <p><span>Toplam frame:</span> <b class="text-dark">${info.total_frames}</b></p>
+                    <p><span>FPS:</span> <b class="text-dark">${info.fps.toFixed(2)}</b></p>
+                    <p><span>Çözünürlük:</span> <b class="text-dark">${info.width} x ${info.height}</b></p>
+                `;
+
+                // Önizleme Grid'ini doldur
+                previewGridDiv.innerHTML = "";
+                data.previews.forEach(frame64 => {
+                    const col = document.createElement('div');
+                    col.className = 'col';
+                    col.innerHTML = `<img src="data:image/jpeg;base64,${frame64}" alt="Frame">`;
+                    previewGridDiv.appendChild(col);
+                });
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Video bilgileri yüklenirken hata oluştu.");
+            uploadText.innerHTML = "Videoyu buraya sürükleyin veya tıklayarak seçin";
+        }
+    });
+
+    // İşlemi Başlatma
+    document.getElementById('extractForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const videoFile = videoInput.files[0];
+        if(!videoFile) { alert("Lütfen önce bir video seçin!"); return; }
+
+        const formData = new FormData();
+        formData.append('video', videoFile);
+        formData.append('mode', document.querySelector('input[name="extractionMode"]:checked').value);
+        formData.append('interval', document.querySelector('input[name="interval"]').value);
+        formData.append('target_fps', document.querySelector('input[name="target_fps"]').value);
+        formData.append('motion_thresh', document.querySelector('input[name="motion_thresh"]').value);
+
+        const btn = document.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "⏳ Video İşleniyor... Terminale bakınız.";
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/extract', { method: 'POST', body: formData });
+            const data = await response.json();
+
+            if(data.status === "success") {
+                btn.innerHTML = `✅ ${data.count} Kare Çıkarıldı! İndiriliyor...`;
+                window.location.href = data.download_url;
+                setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 3000);
+            }
+        } catch (error) {
+            alert("İşlem sırasında hata!");
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>
