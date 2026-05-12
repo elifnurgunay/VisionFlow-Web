@@ -1,0 +1,37 @@
+project_name: "IYHSS Auto Label"
+device: "cuda"
+
+model:
+  path: "C:/Users/Atakan/Documents/iyhss/weights/yolo26s/best.pt"
+  img_size: 640
+  conf_threshold: 0.5
+  iou_threshold: 0.45
+
+classes:
+  - ballistic_missile
+  - helicopter
+  - f-16
+  - drone
+
+class_colors:
+  ballistic_missile: [0, 0, 255]
+  helicopter:        [0, 255, 0]
+  f-16:              [255, 165, 0]
+  drone:             [255, 0, 255]
+
+input:
+  images_dir: "C:/Users/Atakan/datasets/to_label/images"
+  extensions: [".jpg", ".jpeg", ".png"]
+
+output:
+  labels_txt_dir:  "C:/Users/Atakan/results/auto_label/labels_txt"
+  labels_json_dir: "C:/Users/Atakan/results/auto_label/labels_json"
+  annotated_dir:   "C:/Users/Atakan/results/auto_label/annotated"
+  report_dir:      "C:/Users/Atakan/results/auto_label/report"
+
+options:
+  save_txt:       true
+  save_json:      true
+  save_annotated: true
+  skip_empty:     false
+  warmup_images:  5

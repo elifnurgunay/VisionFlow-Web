@@ -1,0 +1,82 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.log
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# PyInstaller / Build
+# =========================
+build/
+dist/
+*.spec
+
+# =========================
+# Dataset / Outputs
+# =========================
+datasets/
+data/
+output/
+outputs/
+results/
+runs/
+
+# YOLO / training outputs
+weights/
+*.pt
+*.pth
+*.onnx
+
+# Annotation outputs
+*.txt
+*.json
+
+# =========================
+# Logs & Reports
+# =========================
+*.log
+report/
+reports/
+*.html
+*.png
+
+# =========================
+# Config (optional safety)
+# =========================
+config.local.yaml
+
+# =========================
+# CUDA / Torch cache
+# =========================
+*.cache
+torch_extensions/
+
+# =========================
+# Temporary files
+# =========================
+temp/
+tmp/
+*.tmp
