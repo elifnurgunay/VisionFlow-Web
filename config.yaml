@@ -1,33 +1,114 @@
-project_name: "IYHSS Auto Label"
+project_name: "VisionFlow Auto Label"
 device: "cuda"
 
 model:
-  path: "C:/Users/Atakan/Documents/iyhss/weights/yolo26s/best.pt"
+  path: "model/yolo11n.pt"
   img_size: 640
   conf_threshold: 0.5
   iou_threshold: 0.45
 
 classes:
-  - ballistic_missile
-  - helicopter
-  - f-16
-  - drone
+  - person
+  - bicycle
+  - car
+  - motorcycle
+  - airplane
+  - bus
+  - train
+  - truck
+  - boat
+  - traffic light
+  - fire hydrant
+  - stop sign
+  - parking meter
+  - bench
+  - bird
+  - cat
+  - dog
+  - horse
+  - sheep
+  - cow
+  - elephant
+  - bear
+  - zebra
+  - giraffe
+  - backpack
+  - umbrella
+  - handbag
+  - tie
+  - suitcase
+  - frisbee
+  - skis
+  - snowboard
+  - sports ball
+  - kite
+  - baseball bat
+  - baseball glove
+  - skateboard
+  - surfboard
+  - tennis racket
+  - bottle
+  - wine glass
+  - cup
+  - fork
+  - knife
+  - spoon
+  - bowl
+  - banana
+  - apple
+  - sandwich
+  - orange
+  - broccoli
+  - carrot
+  - hot dog
+  - pizza
+  - donut
+  - cake
+  - chair
+  - couch
+  - potted plant
+  - bed
+  - dining table
+  - toilet
+  - tv
+  - laptop
+  - mouse
+  - remote
+  - keyboard
+  - cell phone
+  - microwave
+  - oven
+  - toaster
+  - sink
+  - refrigerator
+  - book
+  - clock
+  - vase
+  - scissors
+  - teddy bear
+  - hair drier
+  - toothbrush
 
 class_colors:
-  ballistic_missile: [0, 0, 255]
-  helicopter:        [0, 255, 0]
-  f-16:              [255, 165, 0]
-  drone:             [255, 0, 255]
+  person:     [0, 255, 0]     # BGR formatında Yeşil
+  bicycle:    [0, 165, 255]   # BGR formatında Turuncu
+  car:        [255, 0, 0]     # BGR formatında Mavi
+  laptop:     [255, 0, 255]   # BGR formatında Mor/Pembe
+  cell phone: [0, 255, 255]   # BGR formatında Sarı
+  bottle:     [255, 255, 0]   # BGR formatında Camgöbeği
+  cup:        [128, 0, 128]   # BGR formatında Koyu Mor
+  chair:      [0, 128, 255]   # BGR formatında Açık Turuncu
+  book:       [50, 205, 50]   # BGR formatında Lime Yeşili
 
 input:
-  images_dir: "C:/Users/Atakan/datasets/to_label/images"
+  images_dir: "uploads/to_label/images"
   extensions: [".jpg", ".jpeg", ".png"]
 
 output:
-  labels_txt_dir:  "C:/Users/Atakan/results/auto_label/labels_txt"
-  labels_json_dir: "C:/Users/Atakan/results/auto_label/labels_json"
-  annotated_dir:   "C:/Users/Atakan/results/auto_label/annotated"
-  report_dir:      "C:/Users/Atakan/results/auto_label/report"
+  labels_txt_dir:  "outputs/auto_label/labels_txt"
+  labels_json_dir: "outputs/auto_label/labels_json"
+  annotated_dir:   "outputs/auto_label/annotated"
+  report_dir:      "outputs/auto_label/report"
 
 options:
   save_txt:       true
